@@ -12,6 +12,12 @@
 			<key>data</key>
 			<data>PCI=</data>
 		</dict>
+		<dict>
+			<key>offset</key>
+			<integer>24</integer>
+			<key>data</key>
+			<data>7g==</data>
+		</dict>
 	</array>
 </dict>
 </plist>
