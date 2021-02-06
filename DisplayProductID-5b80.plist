@@ -18,6 +18,24 @@
 			<key>data</key>
 			<data>7g==</data>
 		</dict>
+		<dict>
+			<key>offset</key>
+			<integer>66</integer>
+			<key>data</key>
+			<data>VVAh</data>
+		</dict>
+		<dict>
+			<key>offset</key>
+			<integer>208</integer>
+			<key>data</key>
+			<data>VVAh</data>
+		</dict>
+		<dict>
+			<key>offset</key>
+			<integer>226</integer>
+			<key>data</key>
+			<data>VVAh</data>
+		</dict>
 	</array>
 </dict>
 </plist>
