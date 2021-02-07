@@ -1,32 +1,86 @@
 #+TITLE: LG 27GL83A-B macOS EDID Patches
 
 This repository contains patches for the LG 27GL83A's EDID that can be used by
-macOS to configure the monitor correctly. This fixes various issues that this
-monitor has with macOS when connected via HDMI that normally manifest in
-off-looking colours.
+macOS to configure the monitor correctly. Notably these patches:
+
+- Correct the default colour space reported to macOS when connected via. HDMI.
+- Force macOS to use RGB colours for HDMI and DisplayPort connections.
+- Unlock support for 144 Hz refresh rates over HDMI with FreeSync enabled.
 
 The LG 27GL83A is effectively the same monitor as the LG 27GL850 (it identifies
 itself as such) so these patches may work with that monitor too. You might need
-to tweak the display product ID to get them working.
+to tweak the display product ID to get them working though.
 
+* Instructions
+** Safety
 If you have a second, different monitor, installing these patches is relatively
 safe as, if anything breaks, you can just delete them. If you don't have a
 second monitor or your second monitor is another LG 27GL83A connected via the
-same input, be careful. If something doesn't work you could end up without a
-display and without a way to delete the patches.
+same type of input, be careful. If something doesn't work you could end up
+without a display and without a way to delete the patches.
 
-* Installation
+Of course, saying all that, *you install these patches at your own risk.*
+
+** Requirements
+These patches work on Intel Macs running macOS 10.15 and 11.0. They work when
+the monitor is connected via HDMI or DisplayPort with FreeSync enabled.
+
+These patches *will not work*:
+
+- With FreeSync disabled over HDMI.
+- With HDMI compatibility mode enabled.
+- On Apple Silicon Macs (they do not allow EDID overrides).
+
+They *may* work on Intel Macs running older versions of macOS but the
+installation script probably won't work.
+
+** Installation
+A script in the root of the repository will install these patches for you. It
+creates a display override directory at
+
+#+BEGIN_SRC
+/Library/Displays/Contents/Resources/Overrides/DisplayVendorID-1e6d
+#+END_SRC
+
+and then copies the two override files into it. The ~5b7f~ and ~5b80~ override
+files correspond to the DisplayPort and HDMI connectors respectively.
+
+Once the overrides are installed disconnect and reconnect your monitor to
+activate the appropriate patches. You can verify they are working by going to
+System Preferences > Displays and checking the name of the display. They should
+say "27GL850 (HDMI/DP EDID Patched)". If you're using HDMI, you should now see
+an option to enabled the 144 Hz refresh rate too.
+
+[[./display-settings.png]]
+
+** Removal
+Delete the contents of the
+~/Library/Displays/Contents/Resources/Overrides/DisplayVendorID-1e6d~ directory
+and then disconnect and reconnect your monitor.
+
 * What's Broken with the LG 27GL83A
-The LG 27GL83A-B has three different EDIDs:
+The LG 27GL83A has three different EDIDs:
 
 1. DisplayPort EDID
 2. HDMI EDID with FreeSync enabled
 3. HDMI EDID with FreeSync disabled
 
-These patches only apply to the second (HDMI + FreeSync) EDID. They likely won't
-work with the third EDID (FreeSync disabled) because FreeSync changes the
-structure of the CEA-861 extension block.
+These patches only apply to the first and second EDIDs. They won't work with the
+third EDID (FreeSync disabled) because FreeSync changes the structure of the
+CEA-861 extension block.
 
+** DisplayPort
+The DisplayPort EDID is correct but specifies that the monitor supports the
+YCbCr 4:4:4 colour space. While this is true, the RGB colour space is generally
+preferred for desktop usage. Unfortunately macOS has a tendency to pick the
+YCbCr colour space when it's available. This can result in odd looking colours
+ranging from subtly wrong to completely incorrect.
+
+The best example (for me) of where this is wrong is with the Messages or
+FaceTime icons on macOS. They look almost like a lime green colour when these
+monitors are running in YCbCr mode.
+
+** HDMI
 The HDMI EDID used by the monitor contains incorrect data that causes issues
 with macOS:
 
@@ -37,27 +91,34 @@ with macOS:
    produces dull colours on the monitor.
 3. The EDID states that the monitor supports the YCbCr 4:4:4 colour space.
 
-The latter isn't strictly incorrect but it makes macOS prefer that colour space
-over the full RGB colour space. Once the previous two issues are fixed, this
-YCbCr flag results in colours that are slightly blown out. For example, the
-Messages and FaceTime icons on Big Sur end up looking a lime green colour.
+Additionally, when FreeSync is enabled, the refresh rate of the monitor over
+HDMI is limited to 100 Hz. While FreeSync may not support refresh rates over 100
+Hz [citation needed], macOS doesn't support FreeSync, so it would be nice if we
+could bump the refresh rate up to 144 Hz even with FreeSync enabled.
 
 * What Gets Patched
-The following patches are made to the HDMI (FreeSync enabled) EDID:
+** DisplayPort
+1. (Offset 24) The supported features bitmask is updated so the monitor only
+   reports supporting RGB 4:4:4.
+2. (Offset 131) The YCbCr 4:4:4 and YCbCr 4:2:2 support flags are cleared in the
+   CEA-861 extension block.
 
-1. The horizontal and vertical screen sizes are corrected so that macOS reports
-   the correct diagonal screen size of 27".
-2. The horizontal and vertical image sizes for the three detailed timing
-   descriptors are corrected so they produce a diagonal image size of 27".
-3. The sRGB support flag is set in the display features bitmask so that macOS
-   uses the correct colour profile.
-4. The YCbCr 4:4:4 and YCbCr 4:2:2 support flags are cleared in the CEA-861
-   extension block.
-5. The DC_Y444 flag is cleared in the HDMI 1.4 vendor block to disable YCbCr
-   4:4:4 support. This (and point 4 above) makes macOS output a full RGB 4:4:4
-   signal to the monitor instead.
-6. An extra display timing descriptor is inserted into the CEA-861 extension
-   block that unlocks 144 Hz refresh rates over HDMI with FreeSync enabled.
+** HDMI
+1. (Offset 21) The horizontal and vertical screen sizes are corrected so that
+   macOS reports the correct diagonal screen size of 27".
+2. (Offset 24) The sRGB support flag is set in the display features bitmask so
+   that macOS uses the correct colour profile.
+3. (Offset 66, 208, 226) The horizontal and vertical image sizes for the three
+   detailed timing descriptors are corrected so they produce a diagonal image
+   size of 27".
+4. (Offset 131) The YCbCr 4:4:4 and YCbCr 4:2:2 support flags are cleared in the
+   CEA-861 extension block.
+5. (Offset 156) The DC_Y444 flag is cleared in the HDMI 1.4 vendor block to
+   disable YCbCr 4:4:4 support. This (and point 4 above) makes macOS output a
+   full RGB 4:4:4 signal to the monitor instead.
+6. (Offset 232) An extra display timing descriptor is inserted into the CEA-861
+   extension block that unlocks 144 Hz refresh rates over HDMI with FreeSync
+   enabled.
 
 * Technical Notes
 ** CEA-861 Extension Data Block Contents (HDMI FreeSync Enabled)
