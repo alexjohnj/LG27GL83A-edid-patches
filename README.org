@@ -56,6 +56,8 @@ The following patches are made to the HDMI (FreeSync enabled) EDID:
 5. The DC_Y444 flag is cleared in the HDMI 1.4 vendor block to disable YCbCr
    4:4:4 support. This (and point 4 above) makes macOS output a full RGB 4:4:4
    signal to the monitor instead.
+6. An extra display timing descriptor is inserted into the CEA-861 extension
+   block that unlocks 144 Hz refresh rates over HDMI with FreeSync enabled.
 
 * Technical Notes
 ** CEA-861 Extension Data Block Contents (HDMI FreeSync Enabled)
@@ -67,7 +69,7 @@ The data block section starts at byte offset 132. The contents are as follows:
 |          2 |         136 | Video                    |             13 |
 |          3 |         150 | HDMI 1.4 Vendor          |             13 |
 |          4 |         164 | HDMI 2.0 Vendor          |              7 |
-|          5 |         172 | YCbCr 4:2:0 capabilities |              3 |
+|          5 |         172 | YCbCr 4:2:0 Capabilities |              3 |
 |          6 |         176 | AMD Vendor Data          |              8 |
 |          7 |         185 | Colorimetry Data         |              3 |
 |          8 |         189 | HDR Metadata             |              6 |
@@ -75,6 +77,33 @@ The data block section starts at byte offset 132. The contents are as follows:
 The data block ends at byte offset 196 where the first of 2 detailed timing
 descriptors starts.
 
+| DTD | Offset | Resolution  | Refresh Rate / Hz |
+|-----+--------+-------------+-------------------|
+|   1 |    196 | 2560 x 1440 |            74.971 |
+|   2 |    214 | 2560 x 1440 |            59.951 |
+
 Data block 6 is missing if FreeSync is disabled. As the patches update the two
 DTDs after the data block, they won't work with FreeSync disabled because the
 offsets into the DTD block will be different.
+
+** CEA-861 Extension Data Block Contents (HDMI FreeSync Disabled)
+The data block stats at byte offset 132. The contents are as follows:
+
+| Data Block | Byte Offset | Type                     | Length / Bytes |
+|------------+-------------+--------------------------+----------------|
+|          1 |         132 | Audio                    |              3 |
+|          2 |         136 | Video                    |             13 |
+|          3 |         150 | HDMI 1.4 Vendor          |             13 |
+|          4 |         164 | HDMI 2.0 Vendor          |              7 |
+|          5 |         172 | YCbCr 4:2:0 Capabilities |              3 |
+|          6 |         176 | Colorimetry Data         |              3 |
+|          7 |         180 | HDR Metadata             |              6 |
+
+The data block ends at offset 187 (offset 59 inside CEA block) where the first
+of three detailed timing descriptors starts.
+
+| DTD | Offset | Resolution  | Refresh Rate / Hz |
+|-----+--------+-------------+-------------------|
+|   1 |    187 | 2560 x 1440 |            59.951 |
+|   2 |    205 | 2560 x 1440 |           119.998 |
+|   3 |    223 | 2560 x 1440 |           143.999 |
