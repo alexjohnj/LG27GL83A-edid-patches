@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>DisplayProductName</key>
-	<string>27GL850 (EDID Patched)</string>
+	<string>27GL850 (HDMI EDID Patched)</string>
 	<key>edid-patches</key>
 	<array>
 		<dict>
